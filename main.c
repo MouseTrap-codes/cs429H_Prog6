@@ -436,7 +436,9 @@ typedef void (*InstructionHandler)(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt,
 
 // For instructions that ignore the immediate value L:
 void wrapperHandleAdd(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleAdd(cpu, rd, rs, rt); }
+void wrapperHandleAddI(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleAddI(cpu, rd, L); }
 void wrapperHandleSub(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleSub(cpu, rd, rs, rt); }
+void wrapperHandleSubI(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleSubI(cpu, rd, L); }
 void wrapperHandleMul(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleMul(cpu, rd, rs, rt); }
 void wrapperHandleDiv(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleDiv(cpu, rd, rs, rt); }
 void wrapperHandleAnd(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleAnd(cpu, rd, rs, rt); }
@@ -553,6 +555,17 @@ void initOpcodeHandlers() {
 
 
 int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <program.tko>\n", argv[0]);
+        exit(1);
+    }
+    
+    FILE *fp = fopen(argv[1], "rb");
+    if (!fp) {
+        perror("Error opening file");
+        exit(1);
+    }
+
     CPU* cpu = createCPU();
     cpu->registers[31] = MEM_SIZE;
     cpu->programCounter = 0x1000;
@@ -592,7 +605,6 @@ int main(int argc, char *argv[]) {
     }
     
     fclose(fp);
-    return 0;
 
     return 0;
 }
