@@ -567,7 +567,6 @@ int main(int argc, char *argv[]) {
     // Loop until we reach end-of-file.
     while (fread(&instruction, sizeof(uint32_t), 1, fp) == 1) {
         // Assuming the file is stored in big-endian order.
-        // You might need to adjust if the host endianness differs.
         uint8_t opcode = (instruction >> 24) & 0xFF;
         uint8_t rd     = (instruction >> 16) & 0xFF;
         uint8_t rs     = (instruction >> 8)  & 0xFF;
