@@ -1,0 +1,1 @@
+gcc -o hw6 main.c

@@ -431,8 +431,112 @@ void handleDivf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
     cpu->programCounter += 4;
 }
 
-/// now we need to make a function array
-typedef void (*generic_function)(void*);
+// here we implement the function array for O(1) access based on opcode
+// Uniform Instruction Handler Type and Wrappers
+typedef void (*InstructionHandler)(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L);
+
+// For instructions that ignore the immediate value L:
+void wrapperHandleAdd(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleAdd(cpu, rd, rs, rt); }
+void wrapperHandleSub(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleSub(cpu, rd, rs, rt); }
+void wrapperHandleMul(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleMul(cpu, rd, rs, rt); }
+void wrapperHandleDiv(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleDiv(cpu, rd, rs, rt); }
+void wrapperHandleAnd(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleAnd(cpu, rd, rs, rt); }
+void wrapperHandleOr(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleOr(cpu, rd, rs, rt); }
+void wrapperHandleXor(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleXor(cpu, rd, rs, rt); }
+void wrapperHandleNot(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleNot(cpu, rd, rs); }
+void wrapperHandleShftR(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleShftR(cpu, rd, rs, rt); }
+void wrapperHandleShftRI(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleShftRI(cpu, rd, L); }
+void wrapperHandleShftL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleShftL(cpu, rd, rs, rt); }
+void wrapperHandleShftLI(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleShftLI(cpu, rd, L); }
+void wrapperHandleBr(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleBr(cpu, rd); }
+void wrapperHandleBrr(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleBrr(cpu, rd); }
+void wrapperHandleBrrL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleBrrL(cpu, (int64_t)L); }
+void wrapperHandleBrnz(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleBrnz(cpu, rd, rs); }
+void wrapperHandleCall(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleCall(cpu, rd); }
+void wrapperHandleReturn(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleReturn(cpu); }
+void wrapperHandleBrgt(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleBrgt(cpu, rd, rs, rt); }
+
+// Data Movement wrappers
+void wrapperHandleMovRdRsL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleMovRdRsL(cpu, rd, rs, rt, (int64_t)L); }
+void wrapperMovRdRs(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { movRdRs(cpu, rd, rs); }
+void wrapperHandleMovRdL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleMovRdL(cpu, rd, (uint16_t)L); }
+void wrapperHandleMovRDLRs(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleMovRDLRs(cpu, rd, rs, L); }
+
+// Floating Point wrappers
+void wrapperHandleAddf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleAddf(cpu, rd, rs, rt); }
+void wrapperHandleSubf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleSubf(cpu, rd, rs, rt); }
+void wrapperHandleMulf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleMulf(cpu, rd, rs, rt); }
+void wrapperHandleDivf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) { handleDivf(cpu, rd, rs, rt); }
+
+// Privileged instructions wrapper
+// The opcode for privileged instructions is 0xF. We dispatch based on L.
+void wrapperHandlePriv(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
+    switch(L) {
+        case 0: handlePrivHalt(cpu, rd, rs, rt, L); break;
+        case 1: handlePrivTrap(cpu, rd, rs, rt, L); break;
+        case 2: handlePrivRTE(cpu, rd, rs, rt, L); break;
+        case 3: handlePrivInput(cpu, rd, rs, rt, L); break;
+        case 4: handlePrivOutput(cpu, rd, rs, rt, L); break;
+        default:
+            fprintf(stderr, "Illegal privileged instruction L field: %llu\n", L);
+            exit(1);
+    }
+}
+
+// Global Function Pointer Array (256 entries)
+InstructionHandler opHandlers[256] = {0};
+
+void initOpcodeHandlers() {
+    // Clear array (if not already zeroed)
+    for (int i = 0; i < 256; i++) {
+        opHandlers[i] = NULL;
+    }
+    // Use opcodes exactly as defined in the manual:
+
+    // Logic Instructions (0x0 - 0x3)
+    opHandlers[0x0] = wrapperHandleAnd;   // and rd, rs, rt
+    opHandlers[0x1] = wrapperHandleOr;    // or rd, rs, rt
+    opHandlers[0x2] = wrapperHandleXor;   // xor rd, rs, rt
+    opHandlers[0x3] = wrapperHandleNot;   // not rd, rs
+
+    // Shift Instructions (0x4 - 0x7)
+    opHandlers[0x4] = wrapperHandleShftR;  // shftr rd, rs, rt
+    opHandlers[0x5] = wrapperHandleShftRI; // shftri rd, L
+    opHandlers[0x6] = wrapperHandleShftL;  // shftl rd, rs, rt
+    opHandlers[0x7] = wrapperHandleShftLI; // shftli rd, L
+
+    // Control Instructions (0x8 - 0xE)
+    opHandlers[0x8] = wrapperHandleBr;     // br rd
+    opHandlers[0x9] = wrapperHandleBrr;    // brr rd
+    opHandlers[0xA] = wrapperHandleBrrL;   // brr L
+    opHandlers[0xB] = wrapperHandleBrnz;   // brnz rd, rs
+    opHandlers[0xC] = wrapperHandleCall;   // call rd, rs, rt
+    opHandlers[0xD] = wrapperHandleReturn; // return
+    opHandlers[0xE] = wrapperHandleBrgt;   // brgt rd, rs, rt
+
+    // Privileged Instruction (opcode 0xF)
+    opHandlers[0xF] = wrapperHandlePriv;   // priv rd, rs, rt, L
+
+    // Data Movement Instructions (0x10 - 0x13)
+    opHandlers[0x10] = wrapperHandleMovRdRsL; // mov rd, (rs)(L)
+    opHandlers[0x11] = wrapperMovRdRs;        // mov rd, rs
+    opHandlers[0x12] = wrapperHandleMovRdL;     // mov rd, L
+    opHandlers[0x13] = wrapperHandleMovRDLRs;   // mov (rd)(L), rs
+
+    // Floating Point Instructions (0x14 - 0x17)
+    opHandlers[0x14] = wrapperHandleAddf;   // addf rd, rs, rt
+    opHandlers[0x15] = wrapperHandleSubf;   // subf rd, rs, rt
+    opHandlers[0x16] = wrapperHandleMulf;   // mulf rd, rs, rt
+    opHandlers[0x17] = wrapperHandleDivf;   // divf rd, rs, rt
+
+    // Integer Arithmetic Instructions (0x18 - 0x1D)
+    opHandlers[0x18] = wrapperHandleAdd;    // add rd, rs, rt
+    opHandlers[0x19] = wrapperHandleAddI;   // addi rd, L
+    opHandlers[0x1A] = wrapperHandleSub;    // sub rd, rs, rt
+    opHandlers[0x1B] = wrapperHandleSubI;   // subi rd, L
+    opHandlers[0x1C] = wrapperHandleMul;    // mul rd, rs, rt
+    opHandlers[0x1D] = wrapperHandleDiv;    // div rd, rs, rt
+}
 
 
 
@@ -454,9 +558,43 @@ int main(int argc, char *argv[]) {
     cpu->registers[31] = MEM_SIZE;
     cpu->programCounter = 0x1000;
 
-    // line by line we will look at the tko file
-    // and call corresponding function from function array
-    // depending on the opcode of that line
+    // Initialize the opcode function array
+    initOpcodeHandlers();
+    
+    // Each instruction is 4 bytes (32 bits) long.
+    uint32_t instruction;
+    
+    // Loop until we reach end-of-file.
+    while (fread(&instruction, sizeof(uint32_t), 1, fp) == 1) {
+        // Assuming the file is stored in big-endian order.
+        // You might need to adjust if the host endianness differs.
+        uint8_t opcode = (instruction >> 24) & 0xFF;
+        uint8_t rd     = (instruction >> 16) & 0xFF;
+        uint8_t rs     = (instruction >> 8)  & 0xFF;
+        uint8_t rt     = instruction & 0xFF;
+        
+        // For instructions with an immediate value (e.g., addi, subi, brr L),
+        // the immediate is taken from the lower 16 bits.
+        uint16_t imm = instruction & 0xFFFF;
+        uint64_t L = 0;
+        if (opcode == 0x19 || opcode == 0x1B || opcode == 0xA) {
+            // For these opcodes the immediate is used.
+            L = imm;
+        }
+        
+        // Debug: print the decoded fields (optional)
+        // printf("Opcode: 0x%X, rd: %d, rs: %d, rt: %d, L: %llu\n", opcode, rd, rs, rt, L);
+        
+        // Dispatch the instruction.
+        if (opHandlers[opcode]) {
+            opHandlers[opcode](cpu, rd, rs, rt, L);
+        } else {
+            fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
+        }
+    }
+    
+    fclose(fp);
+    return 0;
 
     return 0;
 }
