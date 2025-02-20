@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <regex.h>
 #include <stdbool.h>
+#include <endian.h> 
 
 #define MEM_SIZE 524288 // 512 KB
 
@@ -578,6 +579,7 @@ int main(int argc, char *argv[]) {
     
     // Loop until we reach end-of-file.
     while (fread(&instruction, sizeof(uint32_t), 1, fp) == 1) {
+        instruction = le32toh(instruction);
         // Assuming the file is stored in big-endian order.
         uint8_t opcode = (instruction >> 24) & 0xFF;
         uint8_t rd     = (instruction >> 16) & 0xFF;
