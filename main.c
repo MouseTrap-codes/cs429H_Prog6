@@ -568,17 +568,29 @@ int main(int argc, char *argv[]) {
     }
     
     CPU* cpu = createCPU();
-    cpu->registers[31] = MEM_SIZE;
+    cpu->registers[31] = MEM_SIZE;  // Stack pointer initialization (call/return not fixed)
     cpu->programCounter = 0x1000;
     
-    // Initialize the opcode function array
+    // Load the object code into memory starting at address 0x1000.
+    fseek(fp, 0, SEEK_END);
+    long file_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    if (file_size > MEM_SIZE - 0x1000) {
+        fprintf(stderr, "File too large for memory\n");
+        exit(1);
+    }
+    if (fread(cpu->memory + 0x1000, 1, file_size, fp) != file_size) {
+        fprintf(stderr, "Error reading file\n");
+        exit(1);
+    }
+    fclose(fp);
+    
+    // Initialize the opcode function array.
     initOpcodeHandlers();
     
-    // Each instruction is 4 bytes (32 bits) long.
-    uint32_t instruction;
-    
-    // Loop until end-of-file. The file is stored in little-endian order.
-    while (fread(&instruction, sizeof(uint32_t), 1, fp) == 1) {
+    // Fetch and execute instructions based on the program counter.
+    while (cpu->programCounter < 0x1000 + file_size) {
+        uint32_t instruction = *(uint32_t*)(cpu->memory + cpu->programCounter);
         // Convert from little-endian to host order.
         instruction = le32toh(instruction);
         
@@ -594,14 +606,17 @@ int main(int argc, char *argv[]) {
         uint8_t rt     = (instruction >> 12) & 0x1F;
         uint16_t imm = instruction & 0xFFF;
         uint64_t L = 0;
-        // For immediate instructions: addi (0x19), subi (0x1B), brr L (0xA),
-        // and mov rd, L (0x12) use the immediate value.
-        if (opcode == 0x19 || opcode == 0x1B || opcode == 0xA || opcode == 0x12) {
+        
+        // For immediate instructions:
+        // For brr L (opcode 0xA) we sign-extend the immediate since it can be negative.
+        if (opcode == 0xA) {
+            int64_t signedImm = imm;
+            if (imm & 0x800) // If bit 11 is set, sign-extend.
+                signedImm |= ~0xFFF;
+            L = (uint64_t)signedImm;
+        } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12) {
             L = imm;
         }
-        
-        // Debug: Uncomment to print decoded fields.
-        // printf("Opcode: 0x%X, rd: %d, rs: %d, rt: %d, L: %llu\n", opcode, rd, rs, rt, L);
         
         // Dispatch the instruction.
         if (opHandlers[opcode]) {
@@ -611,7 +626,6 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    fclose(fp);
     return 0;
 }
 
