@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <stdint.h>
 #include <regex.h>
-#include "uthash.h"
 #include <stdbool.h>
 
 #define MEM_SIZE 524288 // 512 KB
