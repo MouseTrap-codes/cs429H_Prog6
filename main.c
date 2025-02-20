@@ -566,36 +566,41 @@ int main(int argc, char *argv[]) {
         perror("Error opening file");
         exit(1);
     }
-
+    
     CPU* cpu = createCPU();
     cpu->registers[31] = MEM_SIZE;
     cpu->programCounter = 0x1000;
-
+    
     // Initialize the opcode function array
     initOpcodeHandlers();
     
     // Each instruction is 4 bytes (32 bits) long.
     uint32_t instruction;
     
-    // Loop until we reach end-of-file.
+    // Loop until end-of-file. The file is stored in little-endian order.
     while (fread(&instruction, sizeof(uint32_t), 1, fp) == 1) {
+        // Convert from little-endian to host order.
         instruction = le32toh(instruction);
-        // Assuming the file is stored in big-endian order.
-        uint8_t opcode = (instruction >> 24) & 0xFF;
-        uint8_t rd     = (instruction >> 16) & 0xFF;
-        uint8_t rs     = (instruction >> 8)  & 0xFF;
-        uint8_t rt     = instruction & 0xFF;
         
-        // For instructions with an immediate value (e.g., addi, subi, brr L),
-        // the immediate is taken from the lower 16 bits.
-        uint16_t imm = instruction & 0xFFFF;
+        // Decode fields based on the Tinker Instruction Manual:
+        // Bits 31-27: opcode (5 bits)
+        // Bits 26-22: rd (5 bits)
+        // Bits 21-17: rs (5 bits)
+        // Bits 16-12: rt (5 bits)
+        // Bits 11-0 : immediate L (12 bits) for instructions that use it.
+        uint8_t opcode = (instruction >> 27) & 0x1F;
+        uint8_t rd     = (instruction >> 22) & 0x1F;
+        uint8_t rs     = (instruction >> 17) & 0x1F;
+        uint8_t rt     = (instruction >> 12) & 0x1F;
+        uint16_t imm = instruction & 0xFFF;
         uint64_t L = 0;
-        if (opcode == 0x19 || opcode == 0x1B || opcode == 0xA) {
-            // For these opcodes the immediate is used.
+        // For immediate instructions: addi (0x19), subi (0x1B), brr L (0xA),
+        // and mov rd, L (0x12) use the immediate value.
+        if (opcode == 0x19 || opcode == 0x1B || opcode == 0xA || opcode == 0x12) {
             L = imm;
         }
         
-        // Debug: print the decoded fields (optional)
+        // Debug: Uncomment to print decoded fields.
         // printf("Opcode: 0x%X, rd: %d, rs: %d, rt: %d, L: %llu\n", opcode, rd, rs, rt, L);
         
         // Dispatch the instruction.
@@ -607,7 +612,6 @@ int main(int argc, char *argv[]) {
     }
     
     fclose(fp);
-
     return 0;
 }
 
