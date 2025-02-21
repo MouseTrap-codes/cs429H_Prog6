@@ -269,8 +269,8 @@ void handleMovRdRsL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, int64_t L) {
     uint64_t address = cpu->registers[rs] + L;
 
     // Check for out-of-bounds memory access
-    if (address < 0 || address >= sizeof(cpu->memory)) {
-        printf("error: invalid memory address at %lld\n", address);
+    if ((access + 8) > (512 * 1024) || access < 0) {
+        fprintf(stderr, "Simulation error");
         exit(1);
     }
 
@@ -303,11 +303,10 @@ void handleMovRDLRs(CPU* cpu, uint8_t rd, uint8_t rs, uint64_t L) {
     uint64_t address = cpu->registers[rd] + L;
 
     // Check for out-of-bounds memory access
-    if (address >= sizeof(cpu->memory)) {
-        printf("error: invalid memory address at %lld\n", address);
+    if ((access + 8) > (512 * 1024) || access < 0) {
+        fprintf(stderr, "Simulation error");
         exit(1);
     }
-
     // Store the value from register rs into memory at the computed address
     *(uint64_t *)(cpu->memory + address) = cpu->registers[rs];
 
@@ -318,12 +317,12 @@ void handleMovRDLRs(CPU* cpu, uint8_t rd, uint8_t rs, uint64_t L) {
 // handling floating point instructions
 // Performs floating-point addition of registers rs and rt, result in rd
 void handleAddf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    double number1 = 0, number2 = 0;
+    double val1 = 0, val2 = 0;
     // Copy bits from the 64-bit register storage into double "number1" and "number2"
-    memcpy(&number1, &(cpu->registers[rs]), sizeof(double));
-    memcpy(&number2, &(cpu->registers[rt]), sizeof(double));
+    memcpy(&val1, &(cpu->registers[rs]), sizeof(double));
+    memcpy(&val2, &(cpu->registers[rt]), sizeof(double));
 
-    double result = number1 + number2;
+    double result = val1 + val2;
 
     // Copy the result back into register rd
     memcpy(&(cpu->registers[rd]), &result, sizeof(double));
@@ -333,11 +332,11 @@ void handleAddf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // Performs floating-point subtraction of registers rs and rt, result in rd
 void handleSubf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    double number1 = 0, number2 = 0;
-    memcpy(&number1, &(cpu->registers[rs]), sizeof(double));
-    memcpy(&number2, &(cpu->registers[rt]), sizeof(double));
+    double val1 = 0, val2 = 0;
+    memcpy(&val1, &(cpu->registers[rs]), sizeof(double));
+    memcpy(&val2, &(cpu->registers[rt]), sizeof(double));
 
-    double result = number1 - number2;
+    double result = val1 - val2;
 
     memcpy(&(cpu->registers[rd]), &result, sizeof(double));
 
@@ -346,11 +345,11 @@ void handleSubf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // Performs floating-point multiplication of registers rs and rt, result in rd
 void handleMulf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    double number1 = 0, number2 = 0;
-    memcpy(&number1, &(cpu->registers[rs]), sizeof(double));
-    memcpy(&number2, &(cpu->registers[rt]), sizeof(double));
+    double val1 = 0, val2 = 0;
+    memcpy(&val1, &(cpu->registers[rs]), sizeof(double));
+    memcpy(&val2, &(cpu->registers[rt]), sizeof(double));
 
-    double result = number1 * number2;  // <-- Correct multiplication
+    double result = val1 * val2;  // <-- Correct multiplication
 
     memcpy(&(cpu->registers[rd]), &result, sizeof(double));
 
@@ -359,18 +358,18 @@ void handleMulf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // Performs floating-point division of registers rs and rt, result in rd 
 void handleDivf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    double number1 = 0, number2 = 0;
+    double val1 = 0, val2 = 0;
     // First, copy both operands out of the registers
-    memcpy(&number1, &(cpu->registers[rs]), sizeof(double));
-    memcpy(&number2, &(cpu->registers[rt]), sizeof(double));
+    memcpy(&val1, &(cpu->registers[rs]), sizeof(double));
+    memcpy(&val2, &(cpu->registers[rt]), sizeof(double));
 
     // Division-by-zero check
-    if (number2 == 0.0) {
+    if (val2 == 0.0) {
         fprintf(stderr, "Simulation error: floating-point divide by zero\n");
         exit(1);
     }
 
-    double result = number1 / number2;
+    double result = val1 / val2;
 
     memcpy(&(cpu->registers[rd]), &result, sizeof(double));
 
