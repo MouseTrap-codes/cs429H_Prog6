@@ -595,14 +595,14 @@ int main(int argc, char *argv[]) {
         
         // For immediate instructions:
         // For brr L (opcode 0xA) we sign-extend the immediate since it can be negative.
-        if (opcode == 0xA) {
-            int64_t signedImm = imm;
-            if (imm & 0x800) // If bit 11 is set, sign-extend.
-                signedImm |= ~0xFFF;
-            L = (uint64_t)signedImm;
-        } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12) {
-            L = imm;
-        }
+        // if (opcode == 0xA) {
+        //     int64_t signedImm = imm;
+        //     if (imm & 0x800) // If bit 11 is set, sign-extend.
+        //         signedImm |= ~0xFFF;
+        //     L = (uint64_t)signedImm;
+        // } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12) {
+        //     L = imm;
+        // }
         
         // Dispatch the instruction.
         if (opHandlers[opcode]) {
