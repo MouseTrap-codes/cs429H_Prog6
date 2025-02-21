@@ -559,12 +559,16 @@ void initOpcodeHandlers() {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
+        fprintf(stderr, "Illegal privileged instruction L field: %llu\n", L);
+
         fprintf(stderr, "Usage: %s <program.tko>\n", argv[0]);
         exit(1);
     }
     
     FILE *fp = fopen(argv[1], "rb");
     if (!fp) {
+        fprintf(stderr, "Error opening file");
+
         perror("Error opening file");
         exit(1);
     }
