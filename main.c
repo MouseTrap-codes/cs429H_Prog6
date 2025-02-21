@@ -321,27 +321,27 @@ void handleAddf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
     double val1 = 0;
     double val2 = 0;
 
-    memcpy(&val1,&registers[rs],sizeof(uint64_t));
-    memcpy(&val2,&registers[rt],sizeof(uint64_t));
+    memcpy(&val1,&(cpu->registers)[rs],sizeof(uint64_t));
+    memcpy(&val2,&(cpu->registers)[rt],sizeof(uint64_t));
 
     double result = val1 + val2;
 
-    memcpy(&registers[rd],&result,sizeof(uint64_t));
+    memcpy(&(cpu->registers)[rd],&result,sizeof(uint64_t));
 
     cpu->programCounter += 4;
 }
 
 // Performs signed subtraction of two double precision values in registers rs and rt , and stores the result in register rd
 void handleSubf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    /double val1 = 0;
+    double val1 = 0;
     double val2 = 0;
 
-    memcpy(&val1,&registers[rs],sizeof(uint64_t));
-    memcpy(&val2,&registers[rt],sizeof(uint64_t));
+    memcpy(&val1,&(cpu->registers)[rs],sizeof(uint64_t));
+    memcpy(&val2,&(cpu->registers)[rt],sizeof(uint64_t));
 
     double result = val1 - val2;
 
-    memcpy(&registers[rd],&result,sizeof(uint64_t));
+    memcpy(&(cpu->registers)[rd],&result,sizeof(uint64_t));
 
     // Move to the next instruction
     cpu->programCounter += 4;
@@ -352,12 +352,12 @@ void handleMulf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
     double val1 = 0;
     double val2 = 0;
 
-    memcpy(&val1,&registers[rs],sizeof(uint64_t));
-    memcpy(&val2,&registers[rt],sizeof(uint64_t));
+    memcpy(&val1,&(cpu->registers)[rs],sizeof(uint64_t));
+    memcpy(&val2,&(cpu->registers)[rt],sizeof(uint64_t));
 
-    double result = val1 * val2;
+    double result = val1 + val2;
 
-    memcpy(&registers[rd],&result,sizeof(uint64_t));
+    memcpy(&(cpu->registers)[rd],&result,sizeof(uint64_t));
 
     // Move to the next instruction
     cpu->programCounter += 4;
@@ -373,12 +373,12 @@ void handleDivf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
         exit(1);
     }
 
-    memcpy(&val1,&registers[rs],sizeof(uint64_t));
-    memcpy(&val2,&registers[rt],sizeof(uint64_t));
+    memcpy(&val1,&(cpu->registers)[rs],sizeof(uint64_t));
+    memcpy(&val2,&(cpu->registers)[rt],sizeof(uint64_t));
 
     double result = val1 / val2;
 
-    memcpy(&registers[rd],&result,sizeof(uint64_t));
+    memcpy(&(cpu->registers)[rd],&result,sizeof(uint64_t));
 
     // Move to the next instruction
     cpu->programCounter += 4;
