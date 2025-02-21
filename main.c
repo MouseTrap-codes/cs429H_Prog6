@@ -140,7 +140,7 @@ void handleShftR(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // Shifts the value in register rd to the right by the number of bits specified by L
 void handleShftRI(CPU* cpu, uint8_t rd, uint64_t L) {
-    cpu->registers[rd] = cpu->registers[rd] >> L; 
+    cpu->registers[rd] = (int64_t)((uint64_t)cpu->registers[rd] >> L);
     cpu->programCounter += 4;
 }
 
@@ -152,7 +152,7 @@ void handleShftL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // Shifts the value in register rd to the left by the number of bits specified by L
 void handleShftLI(CPU* cpu, uint8_t rd, uint64_t L) {
-    cpu->registers[rd] = cpu->registers[rd] << L; 
+    cpu->registers[rd] = (int64_t)((uint64_t)cpu->registers[rd] << L);
     cpu->programCounter += 4;
 }
 
@@ -316,22 +316,18 @@ void handleMovRDLRs(CPU* cpu, uint8_t rd, uint8_t rs, uint64_t L) {
 
 // handling floating point instructions
 // Performs floating-point addition of registers rs and rt, result in rd
-void handleAddf(CPU* comp, uint8_t rd, uint8_t rs, uint8_t rt)
-{
-    // 1) Copy the bit pattern from the integer registers into local double variables
-    double val1 = 0.0;
-    double val2 = 0.0;
-    memcpy(&val1, &comp->registers[rs], sizeof(double));
-    memcpy(&val2, &comp->registers[rt], sizeof(double));
+void handleAddf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
+    double val1 = 0;
+    double val2 = 0;
 
-    // 2) Perform the double addition
-    double res = val1 + val2;
+    memcpy(&val1,&(cpu->registers[rs]),sizeof(uint64_t));
+    memcpy(&val2,&(cpu->registers[rs]),sizeof(uint64_t));
 
-    // 3) Copy the resulting double bits back into the destination register
-    memcpy(&comp->registers[rd], &res, sizeof(double));
+    double result = val1 + val2;
 
-    // 4) Advance the program counter
-    comp->programCounter += 4;
+    memcpy(&(cpu->registers[rs]),&result,sizeof(uint64_t));
+
+    cpu->programCounter += 4;
 }
 
 // Performs floating-point subtraction of registers rs and rt, result in rd
