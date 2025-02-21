@@ -565,7 +565,7 @@ int main(int argc, char *argv[]) {
     
     FILE *fp = fopen(argv[1], "rb");
     if (!fp) {
-        fprintf(stderr, "unable to open file\n");
+        fprintf(stderr, "Invalid tinker filepath");
         exit(1);
     }
     
@@ -591,74 +591,40 @@ int main(int argc, char *argv[]) {
     initOpcodeHandlers();
     
     // Fetch and execute instructions based on the program counter.
-    // while (cpu->programCounter < 0x1000 + file_size) {
-    //     uint32_t instruction = *(uint32_t*)(cpu->memory + cpu->programCounter);
-    //     // Convert from little-endian to host order.
-    //     // instruction = le32toh(instruction);
-        
-    //     // Decode fields based on the Tinker Instruction Manual:
-    //     // Bits 31-27: opcode (5 bits)
-    //     // Bits 26-22: rd (5 bits)
-    //     // Bits 21-17: rs (5 bits)
-    //     // Bits 16-12: rt (5 bits)
-    //     // Bits 11-0 : immediate L (12 bits) for instructions that use it.
-    //     uint8_t opcode = (instruction >> 27) & 0x1F;
-    //     uint8_t rd     = (instruction >> 22) & 0x1F;
-    //     uint8_t rs     = (instruction >> 17) & 0x1F;
-    //     uint8_t rt     = (instruction >> 12) & 0x1F;
-    //     uint16_t imm = instruction & 0xFFF;
-    //     uint64_t L = 0;
-        
-    //     // For immediate instructions:
-    //     // For brr L (opcode 0xA) we sign-extend the immediate since it can be negative.
-    //     if (opcode == 0xA) {
-    //         int64_t signedImm = imm;
-    //         if (imm & 0x800) // If bit 11 is set, sign-extend.
-    //             signedImm |= ~0xFFF;
-    //         L = (uint64_t)signedImm;
-    //     } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12) {
-    //         L = imm;
-    //     }
-        
-    //     // Dispatch the instruction.
-    //     if (opHandlers[opcode]) {
-    //         opHandlers[opcode](cpu, rd, rs, rt, L);
-    //     } else {
-    //         fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
-    //     }
-    // }
-
     while (cpu->programCounter < 0x1000 + file_size) {
-        // Read the 4-byte instruction from memory
         uint32_t instruction = *(uint32_t*)(cpu->memory + cpu->programCounter);
-        // Convert from little-endian to host order
-        instruction = le32toh(instruction);
+        // Convert from little-endian to host order.
+        // instruction = le32toh(instruction);
         
-        // Experimental reversed field extraction:
-        // Instead of:
-        //   bits 31-27: opcode, 26-22: rd, 21-17: rs, 16-12: rt, 11-0: imm,
-        // we now interpret:
-        //   bits 4-0   : opcode (lowest 5 bits)
-        //   bits 9-5   : rd     (next 5 bits)
-        //   bits 14-10 : rs     (next 5 bits)
-        //   bits 19-15 : rt     (next 5 bits)
-        //   bits 31-20 : imm    (highest 12 bits)
-        uint8_t opcode = instruction & 0x1F;               // bits 0-4
-        uint8_t rd     = (instruction >> 5) & 0x1F;          // bits 5-9
-        uint8_t rs     = (instruction >> 10) & 0x1F;         // bits 10-14
-        uint8_t rt     = (instruction >> 15) & 0x1F;         // bits 15-19
-        uint16_t imm   = (instruction >> 20) & 0xFFF;        // bits 20-31
-        uint64_t L     = 0;
+        // Decode fields based on the Tinker Instruction Manual:
+        // Bits 31-27: opcode (5 bits)
+        // Bits 26-22: rd (5 bits)
+        // Bits 21-17: rs (5 bits)
+        // Bits 16-12: rt (5 bits)
+        // Bits 11-0 : immediate L (12 bits) for instructions that use it.
+        uint8_t opcode = (instruction >> 27) & 0x1F;
+        uint8_t rd     = (instruction >> 22) & 0x1F;
+        uint8_t rs     = (instruction >> 17) & 0x1F;
+        uint8_t rt     = (instruction >> 12) & 0x1F;
+        uint16_t imm = instruction & 0xFFF;
+        uint64_t L = 0;
         
-        // For testing purposes, we now treat the immediate as unsigned
-        // (Note: In the official spec, some instructions require sign-extension.)
-        L = imm;
+        // For immediate instructions:
+        // For brr L (opcode 0xA) we sign-extend the immediate since it can be negative.
+        if (opcode == 0xA) {
+            int64_t signedImm = imm;
+            if (imm & 0x800) // If bit 11 is set, sign-extend.
+                signedImm |= ~0xFFF;
+            L = (uint64_t)signedImm;
+        } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12) {
+            L = imm;
+        }
         
         // Dispatch the instruction.
         if (opHandlers[opcode]) {
             opHandlers[opcode](cpu, rd, rs, rt, L);
         } else {
-            fprintf(stderr, "Unhandled opcode (reversed decoding): 0x%X\n", opcode);
+            fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
         }
     }
     
