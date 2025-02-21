@@ -419,7 +419,7 @@ void handleDivf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
     double val2 = *(double *)&cpu->registers[rt];
 
     if (val2 == 0) {
-        printf("error: cannot divide by 0");
+        printf("Simulation error");
         exit(1);
     }
 
