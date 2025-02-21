@@ -39,6 +39,8 @@ void overflowErrorMessage() {
 
 // Performs signed addition of two 64-bit signed values in registers rs and rt and stores the result in register rd.
 void handleAdd(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
+    printf("Called! Add\n");
+
     int64_t val1 = (int64_t)cpu->registers[rs];
     int64_t val2 = (int64_t)cpu->registers[rt];
 
@@ -212,84 +214,46 @@ void handleBrgt(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 }
 
 // handling priveledged instructions
-// 0x0: Halt instruction. This stops the simulation. It is the last instruction run by a program
-void handlePrivHalt(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
-    // the value of L can cause a simulation error
-    if (L != 0) {
-        printf("error: L is invalid");
-        exit(1);
+void priv(int rd, int rs, int rt, uint64_t L) {
+    printf("Called! Priv\n");
+    switch (L) {
+        case 0x0: // Halt instruction: stop simulation
+            exit(0);
+            break;
+        case 0x1: // Trap instruction: switch to supervisor mode and handle system call
+            cpu->userMode = 0; // false because we are now in supervisor mode
+            cpu->programCounter += 4;
+            break;
+        case 0x2: // RTE instruction: return from exception, switch back to user mode
+            cpu->userMode = 1; // true because we are back in user mode
+            cpu->programCounter += 4;
+            break;
+        case 0x3: // Input instruction: rd <- Input[rs]
+            if (cpu->registers[rs] != 0) {
+                printf("unsupported port for input");
+                return;
+            }
+            int64_t input;
+            scanf("%lld", &input);
+        
+            cpu->registers[rd] = (uint64_t)input;
+            cpu->programCounter++;
+            break;
+        case 0x4: // Output instruction: Output[rd] <- rs
+            if (cpu->registers[rd] != 1) {
+                printf("unsupported port for output");
+                return;
+            }
+            printf("%llu", cpu->registers[rs]);
+            cpu->programCounter += 4;
+            break;
+        default: // Illegal L value: undefined priv operation
+            fprintf(stderr, "Simulation error");
+            exit(1);
     }
-    exit(0);
-}
-
-// 0x1: Trap instruction. This allows a user program to call an operating system, with the values of the register specifying the system call and the input parameters. When this instruction is called, the processor switches from user mode to supervisor mode
-void handlePrivTrap(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
-    // the value of L can cause a simulation error
-    if (L != 0) {
-        printf("error: L is invalid");
-        exit(1);
-    }
-    cpu->userMode = 0; // false because we are now in supervisor mode
-    cpu->programCounter++;
-}
-
-// 0x2: RTE instruction. This switches the processor from supervisor mode back to user mode
-void handlePrivRTE(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
-    // the value of L can cause a simulation error
-    if (L != 0) {
-        printf("error: L is invalid");
-        exit(1);
-    }
-    cpu->userMode = 1; // true because we are back in user mode
-    cpu->programCounter++;
-}
-
-/* 0x3: Input instruction.
-Function:
-rd ← Input[rs ]
-Reads from the input port pointed to by the value in register rs and stores
-it in register rd .
-By convention, port 0 is always connected to the keyboard, while port 1 is connected to
-the console output
-*/ 
-void handlePrivInput(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
-    // the value of L can cause a simulation error
-    if (L != 0) {
-        printf("error: L is invalid");
-        exit(1);
-    }
-    if (cpu->registers[rs] != 0) {
-        printf("unsupported port for input");
-        return;
-    }
-    int64_t input;
-    scanf("%lld", &input);
-
-    cpu->registers[rd] = (uint64_t)input;
-    cpu->programCounter++;
-}
-
-/*
-0x4: Output instruction.
-Function:
-Output[rd ] ← rs
-Reads the value in register rs and writes it to the output port pointed to by the
-value in register rd .
-By convention, port 0 is always connected to the keyboard, while port 1 is connected to
-the console output.
-*/
-void handlePrivOutput(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
-    // the value of L can cause a simulation error
-    if (L != 0) {
-        printf("error: L is invalid");
-        exit(1);
-    }
-    if (cpu->registers[rd] != 1) {
-        printf("unsupported port for output");
-        return;
-    }
-    printf("%llu", cpu->registers[rs]);
-    cpu->programCounter += 4;
+    // Note: The program counter (PC) is incremented by 4 after every instruction
+    // in the main simulation loop (except for control instructions), so it is not
+    // updated here.
 }
 
 // handling data movement instructions /////////
@@ -459,17 +423,9 @@ void wrapperHandleDivf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L)
 // Privileged instructions wrapper
 // The opcode for privileged instructions is 0xF. We dispatch based on L.
 void wrapperHandlePriv(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
-    switch(L) {
-        case 0: handlePrivHalt(cpu, rd, rs, rt, L); break;
-        case 1: handlePrivTrap(cpu, rd, rs, rt, L); break;
-        case 2: handlePrivRTE(cpu, rd, rs, rt, L); break;
-        case 3: handlePrivInput(cpu, rd, rs, rt, L); break;
-        case 4: handlePrivOutput(cpu, rd, rs, rt, L); break;
-        default:
-            fprintf(stderr, "Illegal privileged instruction L field: %llu\n", L);
-            exit(1);
-    }
+    priv(cpu, rd, rs, rt, L);
 }
+
 
 // Global Function Pointer Array (256 entries)
 InstructionHandler opHandlers[256] = {0};
@@ -587,15 +543,15 @@ int main(int argc, char *argv[]) {
         // Bits 16-12: rt (5 bits)
         // Bits 11-0 : immediate L (12 bits) for instructions that use it.
         uint8_t opcode = (instruction >> 27) & 0x1F;
-        // printf("%d\n", opcode);
+        printf("opcode: 0x%x\n", opcode);
         uint8_t rd     = (instruction >> 22) & 0x1F;
-        // printf("%d\n", rd);
+        printf("rd: %d\n", rd);
         uint8_t rs     = (instruction >> 17) & 0x1F;
-        // printf("%d\n", rs);
+        printf("rs: %d\n", rs);
         uint8_t rt     = (instruction >> 12) & 0x1F;
-        // printf("%d\n", rt);
+        printf("rt: %d\n", rt);
         uint16_t imm = instruction & 0xFFF;
-        // printf("%d\n", imm);
+        printf("L: %d\n", imm);
         uint64_t L = 0;
         
         // For immediate instructions:
@@ -612,7 +568,6 @@ int main(int argc, char *argv[]) {
         // Dispatch the instruction.
         if (opHandlers[opcode]) {
             opHandlers[opcode](cpu, rd, rs, rt, L);
-            printf("~%lu\n", cpu->registers[rd]);
         } else {
             fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
         }
