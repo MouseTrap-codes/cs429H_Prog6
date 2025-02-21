@@ -215,14 +215,14 @@ void handleBrgt(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // handling priveledged instructions
 void priv(CPU* cpu, int rd, int rs, int rt, uint64_t L) {
-    printf("Called! Priv\n");
+    //printf("Called! Priv\n");
     switch (L) {
         case 0x0: // Halt instruction: stop simulation
-            printf("RAVI TEJ 1\n");
+            //printf("RAVI TEJ 1\n");
             exit(0);
             break;
         case 0x1: // Trap instruction: switch to supervisor mode and handle system call
-            printf("RAVI TEJ 2\n");
+            //printf("RAVI TEJ 2\n");
             cpu->userMode = 0; // false because we are now in supervisor mode
             cpu->programCounter += 4;
             break;
@@ -231,6 +231,7 @@ void priv(CPU* cpu, int rd, int rs, int rt, uint64_t L) {
             cpu->programCounter += 4;
             break;
         case 0x3: // Input instruction: rd <- Input[rs]
+            //printf("INPUT");
             if (cpu->registers[rs] != 0) {
                 printf("unsupported port for input");
                 return;
@@ -239,9 +240,10 @@ void priv(CPU* cpu, int rd, int rs, int rt, uint64_t L) {
             scanf("%lld", &input);
         
             cpu->registers[rd] = (uint64_t)input;
-            cpu->programCounter++;
+            cpu->programCounter += 4;
             break;
         case 0x4: // Output instruction: Output[rd] <- rs
+            //printf("OUTPUT");
             if (cpu->registers[rd] != 1) {
                 printf("unsupported port for output");
                 return;
@@ -425,6 +427,8 @@ void wrapperHandleDivf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L)
 // Privileged instructions wrapper
 // The opcode for privileged instructions is 0xF. We dispatch based on L.
 void wrapperHandlePriv(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
+    //printf("I was called\n");
+   // printf("%lu\n", L);
     priv(cpu, rd, rs, rt, L);
 }
 
@@ -489,14 +493,7 @@ void initOpcodeHandlers() {
 /// we also need to make a method to parse the lines of binary
 /// to get the necessary information ie opcode rd rs rt L etc
 
-void printRegisters(CPU* cpu) {
-    printf("Register state:\n");
-    for (int i = 0; i < 32; i++) {
-        printf("R%d: %llu ", i, cpu->registers[i]);
-        if((i + 1) % 4 == 0) printf("\n");
-    }
-    printf("\n");
-}
+
 
 
 
@@ -552,13 +549,13 @@ int main(int argc, char *argv[]) {
         // Bits 16-12: rt (5 bits)
         // Bits 11-0 : immediate L (12 bits) for instructions that use it.
         uint8_t opcode = (instruction >> 27) & 0x1F;
-        //printf("opcode: 0x%x\n", opcode);
+        //printf("opcode: 0x%x ", opcode);
         uint8_t rd     = (instruction >> 22) & 0x1F;
-        //printf("rd: %d\n", rd);
+        //printf("rd: %d ", rd);
         uint8_t rs     = (instruction >> 17) & 0x1F;
-        //printf("rs: %d\n", rs);
+        //printf("rs: %d ", rs);
         uint8_t rt     = (instruction >> 12) & 0x1F;
-        //printf("rt: %d\n", rt);
+        //printf("rt: %d ", rt);
         uint16_t imm = instruction & 0xFFF;
         //printf("L: %d\n", imm);
         uint64_t L = 0;
@@ -570,14 +567,15 @@ int main(int argc, char *argv[]) {
             if (imm & 0x800) // If bit 11 is set, sign-extend.
                 signedImm |= ~0xFFF;
             L = (uint64_t)signedImm;
-        } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12) {
+        } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12 || opcode == 0xf) {
             L = imm;
         }
         
         // Dispatch the instruction.
         if (opHandlers[opcode]) {
+            //printf("%d\n", opcode);
             opHandlers[opcode](cpu, rd, rs, rt, L);
-            printRegisters(cpu);
+            //printRegisters(cpu);
         } else {
             fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
         }
