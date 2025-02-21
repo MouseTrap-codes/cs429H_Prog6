@@ -566,7 +566,7 @@ int main(int argc, char *argv[]) {
             // opcode == 0x12 || // mov rd, L
             opcode == 0xF  || // priv rd, rs, rt, L
             opcode == 0x5  || // shftri
-            opcode == 0x7  || // shftli
+            opcode == 0x7   // shftli
             // opcode == 0x10 || // mov rd, (rs)(L)  <--- Add this
             // opcode == 0x13    // mov (rd)(L), rs  <--- And this
         ) {
