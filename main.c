@@ -45,11 +45,11 @@ void handleAdd(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
     int64_t result = val1 + val2;
 
     // Overflow detection for signed addition
-    // bool overflow = ((val1 > 0 && val2 > 0 && result < 0) || (val1 < 0 && val2 < 0 && result > 0));
-    // if (overflow) {
-    //     overflowErrorMessage();
-    //     return;  // Stop execution if overflow occurs
-    // }
+    bool overflow = ((val1 > 0 && val2 > 0 && result < 0) || (val1 < 0 && val2 < 0 && result > 0));
+    if (overflow) {
+        overflowErrorMessage();
+        return;  // Stop execution if overflow occurs
+    }
 
     cpu->registers[rd] = (uint64_t)result;
     cpu->programCounter += 4;
@@ -246,7 +246,7 @@ void handlePrivTrap(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
         exit(1);
     }
     cpu->userMode = 0; // false because we are now in supervisor mode
-    cpu->programCounter += 4;
+    cpu->programCounter++;
 }
 
 // 0x2: RTE instruction. This switches the processor from supervisor mode back to user mode
@@ -257,7 +257,7 @@ void handlePrivRTE(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
         exit(1);
     }
     cpu->userMode = 1; // true because we are back in user mode
-    cpu->programCounter += 4;
+    cpu->programCounter++;
 }
 
 /* 0x3: Input instruction.
@@ -282,7 +282,7 @@ void handlePrivInput(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
     scanf("%lld", &input);
 
     cpu->registers[rd] = (uint64_t)input;
-    cpu->programCounter += 4;
+    cpu->programCounter++;
 }
 
 /*
@@ -559,8 +559,6 @@ void initOpcodeHandlers() {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "Illegal privileged instruction L field: %llu\n", L);
-
         fprintf(stderr, "Usage: %s <program.tko>\n", argv[0]);
         exit(1);
     }
@@ -593,10 +591,10 @@ int main(int argc, char *argv[]) {
     initOpcodeHandlers();
     
     // Fetch and execute instructions based on the program counter.
-    while (cpu->programCounter < (0x1000 + file_size)) {
+    while (cpu->programCounter < 0x1000 + file_size) {
         uint32_t instruction = *(uint32_t*)(cpu->memory + cpu->programCounter);
         // Convert from little-endian to host order.
-        instruction = le32toh(instruction);
+        // instruction = le32toh(instruction);
         
         // Decode fields based on the Tinker Instruction Manual:
         // Bits 31-27: opcode (5 bits)
