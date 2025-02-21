@@ -107,8 +107,8 @@ void handleDiv(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
     // Division-by-zero check
     if (val2 == 0) {
-        printf("ERROR: Division by zero!\n");
-        return;
+        fprintf(stderr, "Simulation error");
+        exit(1);
     }
 
     // Handle INT64_MIN / -1 overflow case
