@@ -316,71 +316,64 @@ void handleMovRDLRs(CPU* cpu, uint8_t rd, uint8_t rs, uint64_t L) {
 }
 
 // handling floating point instructions
-// Performs signed addition of two double precision values in registers rs and rt , and stores the result in register rd 
+// Performs floating-point addition of registers rs and rt, result in rd
 void handleAddf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    double val1 = 0;
-    double val2 = 0;
+    double number1 = 0, number2 = 0;
+    // Copy bits from the 64-bit register storage into double "number1" and "number2"
+    memcpy(&number1, &(cpu->registers[rs]), sizeof(double));
+    memcpy(&number2, &(cpu->registers[rt]), sizeof(double));
 
-    memcpy(&val1,&(cpu->registers)[rs],sizeof(uint64_t));
-    memcpy(&val2,&(cpu->registers)[rt],sizeof(uint64_t));
+    double result = number1 + number2;
 
-    double result = val1 + val2;
-
-    memcpy(&(cpu->registers)[rd],&result,sizeof(uint64_t));
+    // Copy the result back into register rd
+    memcpy(&(cpu->registers[rd]), &result, sizeof(double));
 
     cpu->programCounter += 4;
 }
 
-// Performs signed subtraction of two double precision values in registers rs and rt , and stores the result in register rd
+// Performs floating-point subtraction of registers rs and rt, result in rd
 void handleSubf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    double val1 = 0;
-    double val2 = 0;
+    double number1 = 0, number2 = 0;
+    memcpy(&number1, &(cpu->registers[rs]), sizeof(double));
+    memcpy(&number2, &(cpu->registers[rt]), sizeof(double));
 
-    memcpy(&val1,&(cpu->registers)[rs],sizeof(uint64_t));
-    memcpy(&val2,&(cpu->registers)[rt],sizeof(uint64_t));
+    double result = number1 - number2;
 
-    double result = val1 - val2;
+    memcpy(&(cpu->registers[rd]), &result, sizeof(double));
 
-    memcpy(&(cpu->registers)[rd],&result,sizeof(uint64_t));
-
-    // Move to the next instruction
     cpu->programCounter += 4;
 }
 
-// Performs signed multiplication of two double precision values in registers rs and rt , and stores the result in register rd
+// Performs floating-point multiplication of registers rs and rt, result in rd
 void handleMulf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    double val1 = 0;
-    double val2 = 0;
+    double number1 = 0, number2 = 0;
+    memcpy(&number1, &(cpu->registers[rs]), sizeof(double));
+    memcpy(&number2, &(cpu->registers[rt]), sizeof(double));
 
-    memcpy(&val1,&(cpu->registers)[rs],sizeof(uint64_t));
-    memcpy(&val2,&(cpu->registers)[rt],sizeof(uint64_t));
+    double result = number1 * number2;  // <-- Correct multiplication
 
-    double result = val1 + val2;
+    memcpy(&(cpu->registers[rd]), &result, sizeof(double));
 
-    memcpy(&(cpu->registers)[rd],&result,sizeof(uint64_t));
-
-    // Move to the next instruction
     cpu->programCounter += 4;
 }
 
-// Performs signed division of two double precision values in registers rs and rt , and stores the result in register rd 
+// Performs floating-point division of registers rs and rt, result in rd 
 void handleDivf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    double val1 = 0;
-    double val2 = 0;
+    double number1 = 0, number2 = 0;
+    // First, copy both operands out of the registers
+    memcpy(&number1, &(cpu->registers[rs]), sizeof(double));
+    memcpy(&number2, &(cpu->registers[rt]), sizeof(double));
 
-    if (val2 == 0) {
-        fprintf(stderr, "Simulation error");
+    // Division-by-zero check
+    if (number2 == 0.0) {
+        fprintf(stderr, "Simulation error: floating-point divide by zero\n");
         exit(1);
     }
 
-    memcpy(&val1,&(cpu->registers)[rs],sizeof(uint64_t));
-    memcpy(&val2,&(cpu->registers)[rt],sizeof(uint64_t));
+    double result = number1 / number2;
 
-    double result = val1 / val2;
+    memcpy(&(cpu->registers[rd]), &result, sizeof(double));
 
-    memcpy(&(cpu->registers)[rd],&result,sizeof(uint64_t));
-
-    // Move to the next instruction
     cpu->programCounter += 4;
 }
 
