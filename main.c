@@ -266,7 +266,7 @@ void priv(CPU* cpu, int rd, int rs, int rt, uint64_t L) {
     register rs as a base register and the literal value L as an index, and stores it in register rd
 */
 void handleMovRdRsL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, int64_t L) {
-    uint64_t address = cpu->registers[rs] + L;
+    uint64_t address = (int64_t)(cpu->registers[rs] + L);
 
     // Check for out-of-bounds memory access
     if ((address + 8) > (512 * 1024) || address < 0) {
