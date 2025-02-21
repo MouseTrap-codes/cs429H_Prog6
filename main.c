@@ -475,111 +475,86 @@ void initOpcodeHandlers() {
     opHandlers[0x1D] = wrapperHandleDiv;    
 }
 
-int main(int argc, char *argv[]) {
-    // 1) Check that a filename was provided
+nt main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <program.tko>\n", argv[0]);
-        return 1;
+        exit(1);
     }
-
-    // 2) Attempt to open the .tko file
+    
     FILE *fp = fopen(argv[1], "rb");
     if (!fp) {
         perror("Error opening file");
-        return 1;
+        exit(1);
     }
-
-    // 3) Create the CPU and zero it out
+    
     CPU* cpu = createCPU();
-    // For convenience, set stack pointer near top of memory (if you want)
-    cpu->registers[31] = MEM_SIZE;
-
-    // 4) Load the .tko object code into memory at address 0x1000
+    // memset(&cpu, 0, sizeof(cpu));
+    cpu->registers[31] = MEM_SIZE;  // Stack pointer initialization (call/return not fixed)
+    // cpu->programCounter = 0x1000;
+    
+    // Load the object code into memory starting at address 0x1000.
     fseek(fp, 0, SEEK_END);
     long file_size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
-    if (file_size < 0) {
-        fprintf(stderr, "Error: bad file size\n");
-        fclose(fp);
-        return 1;
-    }
     if (file_size > MEM_SIZE - 0x1000) {
         fprintf(stderr, "File too large for memory\n");
-        fclose(fp);
-        return 1;
+        exit(1);
     }
-    size_t read_count = fread(cpu->memory + 0x1000, 1, (size_t)file_size, fp);
-    fclose(fp);
-    if (read_count != (size_t)file_size) {
+    if (fread(cpu->memory + 0x1000, 1, file_size, fp) != file_size) {
         fprintf(stderr, "Error reading file\n");
-        return 1;
+        exit(1);
     }
-
-    // 5) Initialize the program counter to 0x1000
-    cpu->programCounter = 0x1000;
-
-    // 6) Initialize opcode handlers (populates your opHandlers[] array)
+    fclose(fp);
+    
+    // Initialize the opcode function array.
     initOpcodeHandlers();
-
-    // 7) Fetch/decode/execute loop
-    //    We'll stop if PC goes beyond the loaded instructions,
-    //    or if a 'halt' instruction (priv 0, L=0) is called (which calls exit(0)).
+    
+    // Fetch and execute instructions based on the program counter.
     while (cpu->programCounter < 0x1000 + file_size) {
-        // Fetch the 4-byte instruction at PC
-        uint32_t instruction = *(uint32_t *)(cpu->memory + cpu->programCounter);
+        // 1) Read the 4-byte instruction from memory
+        uint32_t instruction = *(uint32_t*)(cpu->memory + cpu->programCounter);
 
-        // Convert from little-endian to host-endian (no-op on x86, essential on big-endian)
+        // 2) Convert from little-endian to host order
         instruction = le32toh(instruction);
 
-        // Tinker Instruction Format:
-        // Bits 31-27 => opcode (5 bits)
-        // Bits 26-22 => rd     (5 bits)
-        // Bits 21-17 => rs     (5 bits)
-        // Bits 16-12 => rt     (5 bits)
-        // Bits 11-0  => imm    (12 bits)
+        // 3) Decode fields
+        // Bits 31-27: opcode (5 bits)
+        // Bits 26-22: rd (5 bits)
+        // Bits 21-17: rs (5 bits)
+        // Bits 16-12: rt (5 bits)
+        // Bits 11-0 : immediate L (12 bits)
         uint8_t opcode = (instruction >> 27) & 0x1F;
         uint8_t rd     = (instruction >> 22) & 0x1F;
         uint8_t rs     = (instruction >> 17) & 0x1F;
         uint8_t rt     = (instruction >> 12) & 0x1F;
-        uint16_t imm   = instruction & 0xFFF;
-
-        // Some instructions use imm, some sign-extend it, some ignore it
-        uint64_t L = 0;
-
-        // 8) Sign-extension for negative offsets/relatives
-        // brr L => opcode=0xA => pc += L can be negative
-        // mov rd, (rs)(L) => opcode=0x10 => might have negative offset
-        // mov (rd)(L), rs => opcode=0x13 => might have negative offset
-        // Official Tinker also uses sign extension for those instructions.
+        uint16_t imm   = (uint16_t)(instruction & 0xFFF);
+        uint64_t L     = 0;
+        
+        // 4) Immediate decoding logic (sign-extend if needed)
+        // brr L => 0xA => sign-extend
+        // mov rd, (rs)(L) => 0x10 => sign-extend
+        // mov (rd)(L), rs => 0x13 => sign-extend
+        // addi, subi, mov rd, L => treat as unsigned
         if (opcode == 0xA || opcode == 0x10 || opcode == 0x13) {
-            int16_t sImm = (int16_t)imm;
-            if (sImm & 0x800) {
-                sImm |= 0xF000;
+            int16_t signedImm = imm;
+            if (imm & 0x800) { // bit 11 set => negative
+                signedImm |= ~0xFFF;
             }
-            L = (int64_t)sImm;  // negative or positive
-        }
+            L = (int64_t)signedImm;
+        } 
         else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12) {
-            // addi, subi, mov rd, L => treat imm as unsigned
-            L = imm;
+            L = imm; // unsigned
         }
-        // else instructions that don't use imm or use it differently remain L=0
-
-        // 9) Dispatch to the correct handler
-        if (!opHandlers[opcode]) {
-            fprintf(stderr, "Unhandled opcode: 0x%X at PC=0x%llX\n",
-                    opcode, (unsigned long long)cpu->programCounter);
-            // Decide how to handle unknown opcodes. We'll just break out:
-            break;
+        // else L remains 0 by default if not used.
+        
+        // 5) Dispatch the instruction.
+        if (opHandlers[opcode]) {
+            opHandlers[opcode](cpu, rd, rs, rt, L);
+        } else {
+            fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
         }
-
-        // Actually execute
-        opHandlers[opcode](cpu, rd, rs, rt, L);
-        // Many instructions will increment PC by 4 themselves,
-        // or perform a jump that changes PC out of sequence. That’s normal.
     }
-
-    // If we exit the while loop, either we read all instructions or jumped off the end.
-    // Some specs want you to treat that as an error. If not, just return success.
+    
+    printf("Simulation error \n");
     return 0;
 }
-
