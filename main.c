@@ -48,6 +48,7 @@ void handleAdd(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
     bool overflow = ((val1 > 0 && val2 > 0 && result < 0) || (val1 < 0 && val2 < 0 && result > 0));
     if (overflow) {
         overflowErrorMessage();
+        cpu->programCounter += 4;
         return;  // Stop execution if overflow occurs
     }
 
@@ -72,6 +73,7 @@ void handleSub(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
     bool overflow = ((val1 > 0 && val2 < 0 && result < 0) || (val1 < 0 && val2 > 0 && result > 0));
     if (overflow) {
         overflowErrorMessage();
+        cpu->programCounter += 4;
         return;
     }
 
@@ -93,6 +95,7 @@ void handleMul(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
     // Check for overflow
     if (val1 != 0 && (val2 > INT64_MAX / val1 || val2 < INT64_MIN / val1)) {
         overflowErrorMessage();
+        cpu->programCounter += 4;
         return;
     }
 
@@ -594,7 +597,7 @@ int main(int argc, char *argv[]) {
     while (cpu->programCounter < 0x1000 + file_size) {
         uint32_t instruction = *(uint32_t*)(cpu->memory + cpu->programCounter);
         // Convert from little-endian to host order.
-        // instruction = le32toh(instruction);
+        instruction = le32toh(instruction);
         
         // Decode fields based on the Tinker Instruction Manual:
         // Bits 31-27: opcode (5 bits)
