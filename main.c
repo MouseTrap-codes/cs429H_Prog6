@@ -623,6 +623,7 @@ int main(int argc, char *argv[]) {
         // Dispatch the instruction.
         if (opHandlers[opcode]) {
             opHandlers[opcode](cpu, rd, rs, rt, L);
+            printf(cpu->registers[rd]); // for debugging purposes
         } else {
             fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
         }
