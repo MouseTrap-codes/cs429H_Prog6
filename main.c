@@ -140,9 +140,7 @@ void handleShftR(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // Shifts the value in register rd to the right by the number of bits specified by L
 void handleShftRI(CPU* cpu, uint8_t rd, uint64_t L) {
-    uint64_t temp = (uint64_t)cpu->registers[rd];
-    temp >>= (L & 63);              // safer to mask L to 0..63
-    cpu->registers[rd] = (int64_t)temp;  // store back
+    cpu->registers[rd] = cpu->registers[rd] >> L; 
     cpu->programCounter += 4;
 }
 
@@ -154,9 +152,7 @@ void handleShftL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // Shifts the value in register rd to the left by the number of bits specified by L
 void handleShftLI(CPU* cpu, uint8_t rd, uint64_t L) {
-    uint64_t temp = (uint64_t)cpu->registers[rd];
-    temp <<= (L & 63);
-    cpu->registers[rd] = (int64_t)temp;
+    cpu->registers[rd] = cpu->registers[rd] << L; 
     cpu->programCounter += 4;
 }
 
@@ -562,7 +558,7 @@ int main(int argc, char *argv[]) {
             if (imm & 0x800) // If bit 11 is set, sign-extend.
                 signedImm |= ~0xFFF;
             L = (uint64_t)signedImm;
-        } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12 || opcode == 0xf) {
+        } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12 || opcode == 0xf || opcode == 0x5 || opcode == 0x7) {
             L = imm;
         }
         
