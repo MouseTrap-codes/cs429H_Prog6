@@ -39,7 +39,7 @@ void overflowErrorMessage() {
 
 // Performs signed addition of two 64-bit signed values in registers rs and rt and stores the result in register rd.
 void handleAdd(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    printf("Called! Add\n");
+    //printf("Called! Add\n");
 
     int64_t val1 = (int64_t)cpu->registers[rs];
     int64_t val2 = (int64_t)cpu->registers[rt];
@@ -215,7 +215,7 @@ void handleBrgt(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // handling priveledged instructions
 void priv(CPU* cpu, int rd, int rs, int rt, uint64_t L) {
-    printf("Called! Priv\n");
+    //printf("Called! Priv\n");
     switch (L) {
         case 0x0: // Halt instruction: stop simulation
             exit(0);
@@ -543,15 +543,15 @@ int main(int argc, char *argv[]) {
         // Bits 16-12: rt (5 bits)
         // Bits 11-0 : immediate L (12 bits) for instructions that use it.
         uint8_t opcode = (instruction >> 27) & 0x1F;
-        printf("opcode: 0x%x\n", opcode);
+        //printf("opcode: 0x%x\n", opcode);
         uint8_t rd     = (instruction >> 22) & 0x1F;
-        printf("rd: %d\n", rd);
+        //printf("rd: %d\n", rd);
         uint8_t rs     = (instruction >> 17) & 0x1F;
-        printf("rs: %d\n", rs);
+        //printf("rs: %d\n", rs);
         uint8_t rt     = (instruction >> 12) & 0x1F;
-        printf("rt: %d\n", rt);
+        //printf("rt: %d\n", rt);
         uint16_t imm = instruction & 0xFFF;
-        printf("L: %d\n", imm);
+        //printf("L: %d\n", imm);
         uint64_t L = 0;
         
         // For immediate instructions:
