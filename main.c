@@ -269,7 +269,7 @@ void handleMovRdRsL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, int64_t L) {
     uint64_t address = cpu->registers[rs] + L;
 
     // Check for out-of-bounds memory access
-    if ((access + 8) > (512 * 1024) || access < 0) {
+    if ((address + 8) > (512 * 1024) || access < 0) {
         fprintf(stderr, "Simulation error");
         exit(1);
     }
@@ -303,7 +303,7 @@ void handleMovRDLRs(CPU* cpu, uint8_t rd, uint8_t rs, uint64_t L) {
     uint64_t address = cpu->registers[rd] + L;
 
     // Check for out-of-bounds memory access
-    if ((access + 8) > (512 * 1024) || access < 0) {
+    if ((address + 8) > (512 * 1024) || access < 0) {
         fprintf(stderr, "Simulation error");
         exit(1);
     }
