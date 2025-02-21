@@ -215,12 +215,14 @@ void handleBrgt(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // handling priveledged instructions
 void priv(CPU* cpu, int rd, int rs, int rt, uint64_t L) {
-    //printf("Called! Priv\n");
+    printf("Called! Priv\n");
     switch (L) {
         case 0x0: // Halt instruction: stop simulation
+            printf("RAVI TEJ 1\n");
             exit(0);
             break;
         case 0x1: // Trap instruction: switch to supervisor mode and handle system call
+            printf("RAVI TEJ 2\n");
             cpu->userMode = 0; // false because we are now in supervisor mode
             cpu->programCounter += 4;
             break;
@@ -487,7 +489,14 @@ void initOpcodeHandlers() {
 /// we also need to make a method to parse the lines of binary
 /// to get the necessary information ie opcode rd rs rt L etc
 
-
+void printRegisters(CPU* cpu) {
+    printf("Register state:\n");
+    for (int i = 0; i < 32; i++) {
+        printf("R%d: %llu ", i, cpu->registers[i]);
+        if((i + 1) % 4 == 0) printf("\n");
+    }
+    printf("\n");
+}
 
 
 
@@ -568,6 +577,7 @@ int main(int argc, char *argv[]) {
         // Dispatch the instruction.
         if (opHandlers[opcode]) {
             opHandlers[opcode](cpu, rd, rs, rt, L);
+            printRegisters(cpu);
         } else {
             fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
         }
