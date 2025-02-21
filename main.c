@@ -558,7 +558,8 @@ int main(int argc, char *argv[]) {
             if (imm & 0x800) // If bit 11 is set, sign-extend.
                 signedImm |= ~0xFFF;
             L = (uint64_t)signedImm;
-        } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12 || opcode == 0xf || opcode == 0x5 || opcode == 0x7) {
+        } else if (opcode == 0x19 || opcode == 0x1B || opcode == 0x12 || opcode == 0xf || opcode == 0x5 || opcode == 0x7
+                    || opcode == 0x10 || opcode == ox13) {
             L = imm;
         }
         
