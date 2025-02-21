@@ -578,7 +578,7 @@ int main(int argc, char *argv[]) {
     while (cpu->programCounter < 0x1000 + file_size) {
         uint32_t instruction = *(uint32_t*)(cpu->memory + cpu->programCounter);
         // Convert from little-endian to host order.
-        // instruction = le32toh(instruction);
+        instruction = le32toh(instruction);
         
         // Decode fields based on the Tinker Instruction Manual:
         // Bits 31-27: opcode (5 bits)
