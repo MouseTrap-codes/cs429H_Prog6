@@ -140,7 +140,9 @@ void handleShftR(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // Shifts the value in register rd to the right by the number of bits specified by L
 void handleShftRI(CPU* cpu, uint8_t rd, uint64_t L) {
-    cpu->registers[rd] = (int64_t)((uint64_t)cpu->registers[rd] >> L);
+    uint64_t temp = (uint64_t)cpu->registers[rd];
+    temp >>= (L & 63);              // safer to mask L to 0..63
+    cpu->registers[rd] = (int64_t)temp;  // store back
     cpu->programCounter += 4;
 }
 
@@ -152,7 +154,9 @@ void handleShftL(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
 // Shifts the value in register rd to the left by the number of bits specified by L
 void handleShftLI(CPU* cpu, uint8_t rd, uint64_t L) {
-    cpu->registers[rd] = (int64_t)((uint64_t)cpu->registers[rd] << L);
+    uint64_t temp = (uint64_t)cpu->registers[rd];
+    temp <<= (L & 63);
+    cpu->registers[rd] = (int64_t)temp;
     cpu->programCounter += 4;
 }
 
