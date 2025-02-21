@@ -567,7 +567,7 @@ int main(int argc, char *argv[]) {
     
     FILE *fp = fopen(argv[1], "rb");
     if (!fp) {
-        fprintf(stderr, "Error opening file");
+        perror("Error opening file");
         exit(1);
     }
     
