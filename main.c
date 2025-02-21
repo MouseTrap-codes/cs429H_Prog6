@@ -552,7 +552,7 @@ int main(int argc, char *argv[]) {
         // For immediate instructions:
         // For brr L (opcode 0xA) we sign-extend the immediate since it can be negative.
         // For immediate instructions:
-        if (opcode == 0xA) {
+        if (opcode == 0xA || opcode == 0x12 || opcode == 0x10 || opcode == 0x13) {
             // brr L needs sign extension
             int64_t signedImm = imm;
             if (imm & 0x800) // If bit 11 is set, sign-extend.
@@ -563,12 +563,12 @@ int main(int argc, char *argv[]) {
             // any opcode that uses bits [11:0] as an unsigned immediate
             opcode == 0x19 || // addi
             opcode == 0x1B || // subi
-            opcode == 0x12 || // mov rd, L
+            // opcode == 0x12 || // mov rd, L
             opcode == 0xF  || // priv rd, rs, rt, L
             opcode == 0x5  || // shftri
-            opcode == 0x7  || // shftli
-            opcode == 0x10 || // mov rd, (rs)(L)  <--- Add this
-            opcode == 0x13    // mov (rd)(L), rs  <--- And this
+            opcode == 0x7   // shftli
+            // opcode == 0x10 || // mov rd, (rs)(L)  <--- Add this
+            // opcode == 0x13    // mov (rd)(L), rs  <--- And this
         ) {
             L = imm;
         }
