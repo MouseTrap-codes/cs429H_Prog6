@@ -214,7 +214,7 @@ void handleBrgt(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 }
 
 // handling priveledged instructions
-void priv(int rd, int rs, int rt, uint64_t L) {
+void priv(CPU* cpu, int rd, int rs, int rt, uint64_t L) {
     printf("Called! Priv\n");
     switch (L) {
         case 0x0: // Halt instruction: stop simulation
