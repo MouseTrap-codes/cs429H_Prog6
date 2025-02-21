@@ -587,10 +587,15 @@ int main(int argc, char *argv[]) {
         // Bits 16-12: rt (5 bits)
         // Bits 11-0 : immediate L (12 bits) for instructions that use it.
         uint8_t opcode = (instruction >> 27) & 0x1F;
+        printf("%d", opcode);
         uint8_t rd     = (instruction >> 22) & 0x1F;
+        printf("%d", rd);
         uint8_t rs     = (instruction >> 17) & 0x1F;
+        printf("%d", rs);
         uint8_t rt     = (instruction >> 12) & 0x1F;
+        printf("%d", rt);
         uint16_t imm = instruction & 0xFFF;
+        printf("%d", imm);
         uint64_t L = 0;
         
         // For immediate instructions:
