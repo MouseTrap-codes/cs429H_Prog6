@@ -317,15 +317,13 @@ void handleMovRDLRs(CPU* cpu, uint8_t rd, uint8_t rs, uint64_t L) {
 // handling floating point instructions
 // Performs floating-point addition of registers rs and rt, result in rd
 void handleAddf(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
-    double val1 = 0;
-    double val2 = 0;
-
-    memcpy(&val1,&(cpu->registers[rs]),sizeof(uint64_t));
-    memcpy(&val2,&(cpu->registers[rs]),sizeof(uint64_t));
+    double val1 = 0, val2 = 0;
+    memcpy(&val1, &(cpu->registers[rs]), sizeof(double));
+    memcpy(&val2, &(cpu->registers[rt]), sizeof(double));
 
     double result = val1 + val2;
 
-    memcpy(&(cpu->registers[rs]),&result,sizeof(uint64_t));
+    memcpy(&(cpu->registers[rd]), &result, sizeof(double));
 
     cpu->programCounter += 4;
 }
