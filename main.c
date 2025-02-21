@@ -587,15 +587,15 @@ int main(int argc, char *argv[]) {
         // Bits 16-12: rt (5 bits)
         // Bits 11-0 : immediate L (12 bits) for instructions that use it.
         uint8_t opcode = (instruction >> 27) & 0x1F;
-        printf("%d", opcode);
+        // printf("%d\n", opcode);
         uint8_t rd     = (instruction >> 22) & 0x1F;
-        printf("%d", rd);
+        // printf("%d\n", rd);
         uint8_t rs     = (instruction >> 17) & 0x1F;
-        printf("%d", rs);
+        // printf("%d\n", rs);
         uint8_t rt     = (instruction >> 12) & 0x1F;
-        printf("%d", rt);
+        // printf("%d\n", rt);
         uint16_t imm = instruction & 0xFFF;
-        printf("%d", imm);
+        // printf("%d\n", imm);
         uint64_t L = 0;
         
         // For immediate instructions:
@@ -612,6 +612,7 @@ int main(int argc, char *argv[]) {
         // Dispatch the instruction.
         if (opHandlers[opcode]) {
             opHandlers[opcode](cpu, rd, rs, rt, L);
+            printf("~%lu\n", cpu->registers[rd]);
         } else {
             fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
         }
