@@ -246,7 +246,7 @@ void handlePrivTrap(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
         exit(1);
     }
     cpu->userMode = 0; // false because we are now in supervisor mode
-    cpu->programCounter++;
+    cpu->programCounter += 4;
 }
 
 // 0x2: RTE instruction. This switches the processor from supervisor mode back to user mode
@@ -257,7 +257,7 @@ void handlePrivRTE(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
         exit(1);
     }
     cpu->userMode = 1; // true because we are back in user mode
-    cpu->programCounter++;
+    cpu->programCounter += 4;
 }
 
 /* 0x3: Input instruction.
@@ -282,7 +282,7 @@ void handlePrivInput(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt, uint64_t L) {
     scanf("%lld", &input);
 
     cpu->registers[rd] = (uint64_t)input;
-    cpu->programCounter++;
+    cpu->programCounter += 4;
 }
 
 /*
@@ -591,10 +591,10 @@ int main(int argc, char *argv[]) {
     initOpcodeHandlers();
     
     // Fetch and execute instructions based on the program counter.
-    while (cpu->programCounter < 0x1000 + file_size) {
+    while (cpu->programCounter < (0x1000 + file_size)) {
         uint32_t instruction = *(uint32_t*)(cpu->memory + cpu->programCounter);
         // Convert from little-endian to host order.
-        // instruction = le32toh(instruction);
+        instruction = le32toh(instruction);
         
         // Decode fields based on the Tinker Instruction Manual:
         // Bits 31-27: opcode (5 bits)
