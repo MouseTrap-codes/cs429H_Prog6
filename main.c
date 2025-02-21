@@ -627,6 +627,8 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Unhandled opcode: 0x%X\n", opcode);
         }
     }
-    
+
+
+    exit(1);
     return 0;
 }
