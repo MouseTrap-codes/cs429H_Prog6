@@ -44,12 +44,6 @@ void handleAdd(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
     int64_t result = val1 + val2;
 
-    // Overflow detection for signed addition
-    bool overflow = ((val1 > 0 && val2 > 0 && result < 0) || (val1 < 0 && val2 < 0 && result > 0));
-    if (overflow) {
-        overflowErrorMessage();
-        return;  // Stop execution if overflow occurs
-    }
 
     cpu->registers[rd] = (uint64_t)result;
     cpu->programCounter += 4;
@@ -68,12 +62,6 @@ void handleSub(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
 
     int64_t result = val1 - val2;
 
-    // Overflow detection for signed subtraction
-    bool overflow = ((val1 > 0 && val2 < 0 && result < 0) || (val1 < 0 && val2 > 0 && result > 0));
-    if (overflow) {
-        overflowErrorMessage();
-        return;
-    }
 
     cpu->registers[rd] = (uint64_t)result;
     cpu->programCounter += 4;
@@ -90,11 +78,7 @@ void handleMul(CPU* cpu, uint8_t rd, uint8_t rs, uint8_t rt) {
     int64_t val1 = (int64_t)cpu->registers[rs];
     int64_t val2 = (int64_t)cpu->registers[rt];
 
-    // Check for overflow
-    if (val1 != 0 && (val2 > INT64_MAX / val1 || val2 < INT64_MIN / val1)) {
-        overflowErrorMessage();
-        return;
-    }
+
 
     cpu->registers[rd] = (uint64_t)(val1 * val2);
     cpu->programCounter += 4;
